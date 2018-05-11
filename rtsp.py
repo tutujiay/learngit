@@ -19,7 +19,7 @@ class rtspClient():
         self.Session = 0
         self.nonce =None
         self.realm = None
-        #self.m3=None
+        self.Setup_url=None
         self.Server_ip = self.rtsp_parse_url(url)
         self.rtsp_connect()
 
@@ -75,26 +75,28 @@ class rtspClient():
         print(msg)
         self.Sock.send(msg)
         self.CSeq += 1
-        self.Buffer = self.Sock.recv(1024)
+        self.Buffer = self.Sock.recv(2048)
         print(self.Buffer)
-
+        self.Setup_url = re.findall(r"a=control:(.+?)\?",self.Buffer)[1]
+        print self.Setup_url
 
     def rtsp_SETUP(self):
         response = calcResponse("SETUP",self.Username,self.Password,self.Url,self.realm,self.nonce)
-        msg = "SETUP " + self.Url + " " + RTSP_VERSION + "\r\n"
+        msg = "SETUP " + self.Setup_url + "? " + RTSP_VERSION + "\r\n"
         msg += "CSeq: " + str(self.CSeq) + "\r\n"
         msg += "Authorization: Digest username=\""+self.Username + "\", realm=\"" + self.realm + "\", nonce=\"" + self.nonce + "\", uri=\"" + self.Url + "\", response=\"" + response + "\"\r\n"
         msg += USER_AGENT_STR + DEFAULT_USERAGENT + "\r\n"
-        msg += "Transport: RTP/AVP;unicast;client_port=64288-64289\r\n"
+        msg += "Transport: RTP/AVP;unicast;client_port=59512-59513\r\n"
         msg += "\r\n"
         print(msg)
         self.Sock.send(msg)
         self.CSeq += 1
-        self.Buffer = self.Sock.recv(1024)
+        self.Buffer = self.Sock.recv(2048)
+        print(self.Buffer)
         self.Session = decodeMsg(self.Buffer)['Session']
         self.Session = self.Session.split(";")[0]
         print self.Session
-        print(self.Buffer)
+        #print(self.Buffer)
 
     def rtsp_PLAY(self):
         response = calcResponse("PLAY",self.Username,self.Password,self.Url,self.realm,self.nonce)
@@ -130,7 +132,7 @@ class rtspClient():
         msg = "TEARDOWN " + self.Url + " " + RTSP_VERSION + "\r\n"
         msg += "CSeq: " + str(self.CSeq) + "\r\n"
         msg += "Authorization: Digest username=\"" + self.Username + "\", realm=\"" + self.realm + "\", nonce=\"" + self.nonce + "\", uri=\"" + self.Url + "\", response=\"" + response + "\"\r\n"
-        msg += "Authorization: Digest username=\"" + self.Username + "\", realm=\"" + self.realm + "\", nonce=\"" + self.nonce + "\", uri=\"" + self.Url + "\", response=\"" + response + "\"\r\n"
+        #msg += "Authorization: Digest username=\"" + self.Username + "\", realm=\"" + self.realm + "\", nonce=\"" + self.nonce + "\", uri=\"" + self.Url + "\", response=\"" + response + "\"\r\n"
         msg += USER_AGENT_STR + DEFAULT_USERAGENT + "\r\n"
         msg += "Session: " + self.Session + "\r\n"
         msg += "\r\n"
@@ -157,7 +159,7 @@ def calcResponse(method,username,password,url,realm,nonce):
 def decodeMsg(strContent):
     mapRetInf = {}
     for str in [elem for elem in strContent.split("\n") if len(elem) >= 1][2:-1]:
-        print str
+        #print str
         tmp2 = str.split(":")
        # print tmp2
         mapRetInf[tmp2[0]] = tmp2[1][:-1]
@@ -177,4 +179,4 @@ if __name__ == '__main__':
     rtsp.rtsp_SETUP()
     rtsp.rtsp_PLAY()
     rtsp.rtsp_GET_PARAMETER()
-    rtsp.rtsp_TEARDOWN()
+    #rtsp.rtsp_TEARDOWN()
